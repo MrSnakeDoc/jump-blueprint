@@ -1,0 +1,31 @@
+---
+# Example Docker Compose configuration for Jump
+# Copy this file to compose.yml and adjust the values to your setup
+
+networks:
+  <your-network-name>:  # Replace with your Docker network name
+    external: true
+
+services:
+  jump:
+    image: <your-image-of-jump>:latest  # Replace with your Jump image (e.g., ghcr.io/mrsnake/jump:latest)
+    container_name: jump
+    restart: unless-stopped
+    user: "1000:1000"  # Adjust UID:GID to match your user
+    env_file:
+      - ./.env  # Make sure to create .env from .env.example
+    volumes:
+      # Mount Homepage services.yaml (read-only)
+      - <your-path-to-services.yaml>:/app/services.yaml  # Replace with absolute path to services.yaml
+    
+    # Traefik labels (OPTIONAL - remove this entire section if not using Traefik)
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.jump.entrypoints=http,https'
+      - 'traefik.http.routers.jump.rule=Host(`jump.your-domain.ext`)'  # Replace with your domain
+      - 'traefik.http.services.jump.loadbalancer.server.port=8080'
+      - 'traefik.http.routers.jump.service=jump'
+      - 'traefik.http.routers.jump.tls=true'
+      - 'traefik.http.routers.jump.tls.certresolver=<your-cert-resolver-name>'  # Replace with your cert resolver name
+    networks:
+      - <your-network-name>  # Must match network name above

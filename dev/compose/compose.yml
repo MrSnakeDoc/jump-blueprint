@@ -1,0 +1,41 @@
+---
+networks:
+  jump-network:
+    external: true
+
+services:
+  redis-jump:
+    image: redis:8.2.2-alpine
+    container_name: jump-redis
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    volumes:
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    networks:
+      - jump-network
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    restart: unless-stopped
+    ports:
+      - 5540:5540
+    environment:
+      - RI_REDIS_HOST=${REDIS_HOST:-redis-jump}
+      - RI_REDIS_PORT=${REDIS_PORT:-6379}
+      - RI_REDIS_ALIAS=${REDIS_HOST:-redis-jump}
+      - RI_REDIS_USERNAME=${REDIS_USER:-default}
+      - RI_REDIS_PASSWORD=${REDIS_PASSWORD:-''}
+      - RI_REDIS_TLS=false
+    depends_on:
+      - redis-jump
+    networks:
+      - jump-network
